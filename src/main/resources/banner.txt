@@ -1,0 +1,9 @@
+${AnsiColor.GREEN}
+${AnsiColor.GREEN}    _    ____              _
+${AnsiColor.GREEN}   | | __ __ )  ___   ___ | |_
+${AnsiColor.GREEN}   | |/ /  _ \ / _ \ / _ \| __|
+${AnsiColor.GREEN}   |   <| |_) | (_) | (_) | |_
+${AnsiColor.GREEN}   |_|\_\____/ \___/ \___/ \__|
+${AnsiColor.GREEN}                               ${AnsiColor.GREEN}
+${AnsiColor.BRIGHT_GREEN}:: ${spring.application.name}:${application.formatted-version} :: Running Spring Boot:${spring-boot.formatted-version} :: Active Profiles: ${spring.profiles.active:${spring.profiles.default:default}} ::
+
