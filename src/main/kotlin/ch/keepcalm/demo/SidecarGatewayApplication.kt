@@ -4,6 +4,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
+import org.springframework.cloud.gateway.route.RouteLocator
+import org.springframework.cloud.gateway.route.builder.*
+import org.springframework.context.annotation.Bean
 import org.springframework.context.support.beans
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
@@ -14,8 +17,48 @@ import org.springframework.web.reactive.function.server.router
 import reactor.kotlin.core.publisher.toFlux
 import java.util.*
 
+
 @SpringBootApplication
 class SidecarGatewayApplication
+//{
+//    @Bean
+//    fun foo(routeLocatorBuilder: RouteLocatorBuilder): RouteLocator = routeLocatorBuilder.routes {
+//        route("kotlinFoo") {
+//            path("/kotlin/**")
+//            filters { stripPrefix(1) }
+//            uri("http://httpbin.org")
+//        }
+//    }
+//
+//    @Bean
+//    fun myRoutes(builder: RouteLocatorBuilder): RouteLocator? {
+//        return builder.routes()
+//            .route { r: PredicateSpec ->
+//                r.path("/api/**")
+//                    .filters { f: GatewayFilterSpec ->
+//                        f.rewritePath("/api/",
+//                            "/service-instances/")
+//                    }
+//                    .uri("lb://UI/")
+//                    .id("first-service")
+//            }.build()
+//    }
+//}
+//
+//
+//        @Bean
+//        fun additionalRouteLocator(builder: RouteLocatorBuilder) = builder.routes {
+//            route(id = "test-kotlin") {
+//                host("kotlin.abc.org") and path("/image/png")
+//                filters {
+//                    prefixPath("/httpbin")
+//                    addResponseHeader("X-TestHeader", "foobar")
+//                }
+//                uri("http://httpbin.org")
+//            }
+//        }
+//
+//}
 
 fun main(args: Array<String>) {
     val log = LoggerFactory.getLogger(SidecarGatewayApplication::class.java)
@@ -38,7 +81,23 @@ fun main(args: Array<String>) {
                             .subscribe { log.info("--> $it") } // subscribe
                     }
                 }
-                // Router
+                // Gateway
+                // http -v :8080/api/customers
+                bean {
+                    ref<RouteLocatorBuilder>()
+                        .routes {
+                            route("customer") {
+                                path("/api/customers**")
+                                filters {
+                                    rewritePath("/api/customers/(?<segment>.*)", "/blog/(?<segment>.*)")
+                                    stripPrefix(1)
+                                    addResponseHeader("X-AnotherHeader", "SideCar")
+                                }
+                                uri("http://localhost:8080/customers")
+                            }
+                        }
+                }
+
                 bean {
                     router {
                         val customerService = ref<CustomerService>()
