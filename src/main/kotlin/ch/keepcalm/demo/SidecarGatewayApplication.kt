@@ -20,45 +20,6 @@ import java.util.*
 
 @SpringBootApplication
 class SidecarGatewayApplication
-//{
-//    @Bean
-//    fun foo(routeLocatorBuilder: RouteLocatorBuilder): RouteLocator = routeLocatorBuilder.routes {
-//        route("kotlinFoo") {
-//            path("/kotlin/**")
-//            filters { stripPrefix(1) }
-//            uri("http://httpbin.org")
-//        }
-//    }
-//
-//    @Bean
-//    fun myRoutes(builder: RouteLocatorBuilder): RouteLocator? {
-//        return builder.routes()
-//            .route { r: PredicateSpec ->
-//                r.path("/api/**")
-//                    .filters { f: GatewayFilterSpec ->
-//                        f.rewritePath("/api/",
-//                            "/service-instances/")
-//                    }
-//                    .uri("lb://UI/")
-//                    .id("first-service")
-//            }.build()
-//    }
-//}
-//
-//
-//        @Bean
-//        fun additionalRouteLocator(builder: RouteLocatorBuilder) = builder.routes {
-//            route(id = "test-kotlin") {
-//                host("kotlin.abc.org") and path("/image/png")
-//                filters {
-//                    prefixPath("/httpbin")
-//                    addResponseHeader("X-TestHeader", "foobar")
-//                }
-//                uri("http://httpbin.org")
-//            }
-//        }
-//
-//}
 
 fun main(args: Array<String>) {
     val log = LoggerFactory.getLogger(SidecarGatewayApplication::class.java)
@@ -81,7 +42,16 @@ fun main(args: Array<String>) {
                             .subscribe { log.info("--> $it") } // subscribe
                     }
                 }
-                // Gateway
+                //  Rest API
+                bean {
+                    router {
+                        val customerService = ref<CustomerService>()
+                        GET("/customers") { ok().body(customerService.findAll()) }
+                        GET("/customers/{id}") { ok().body(customerService.findById(it.pathVariable("id"))) }
+                    }
+                }
+
+                // Gateway - Sidecar
                 // http -v :8080/api/customers
                 bean {
                     ref<RouteLocatorBuilder>()
@@ -96,14 +66,6 @@ fun main(args: Array<String>) {
                                 uri("http://localhost:8080/customers")
                             }
                         }
-                }
-
-                bean {
-                    router {
-                        val customerService = ref<CustomerService>()
-                        GET("/customers") { ok().body(customerService.findAll()) }
-                        GET("/customers/{id}") { ok().body(customerService.findById(it.pathVariable("id"))) }
-                    }
                 }
             }
         )
