@@ -1,4 +1,5 @@
-# Sidecar Gateway with MongoDB Flux Service
+
+# Spring Cloud Gateway as Sidecar
 
 ## MongoDB Customer Document 
 We start with the `MongoDB` `document` class
@@ -27,7 +28,7 @@ class CustomerService(private val customerRepository: CustomerRepository) {
 ````
 
 ## Initialize Data
-Every Application stat let's clean the `MongoDB` collection and write some data to it.
+On every application start let's clean the `MongoDB` collection and write some new data to it.
 We do it with a `Bean` definition with the Kotlin DSL.
 
 ```kotlin
