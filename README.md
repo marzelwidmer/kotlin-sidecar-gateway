@@ -55,7 +55,7 @@ We do it with a `Bean` definition with the Kotlin DSL.
 ```
 ## Create Rest API
 Let's also creat two Rest Endpoint with the Kotlin DSL `Bean` definition.
-`/customers`  and `customers/{id}`
+`/customers`  and `/customers/{id}`
 
 ```kotlin
 // Rest API
