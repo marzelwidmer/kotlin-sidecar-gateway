@@ -4,16 +4,20 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
-import org.springframework.cloud.gateway.route.RouteLocator
-import org.springframework.cloud.gateway.route.builder.*
+import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder
+import org.springframework.cloud.gateway.route.builder.filters
+import org.springframework.cloud.gateway.route.builder.routes
 import org.springframework.context.annotation.Bean
 import org.springframework.context.support.beans
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.repository.reactive.ReactiveCrudRepository
 import org.springframework.stereotype.Service
-import org.springframework.web.reactive.function.server.body
-import org.springframework.web.reactive.function.server.router
+import org.springframework.web.reactive.function.server.*
+import org.springframework.web.reactive.function.server.RequestPredicates.method
+import org.springframework.web.reactive.function.server.RequestPredicates.path
+import org.springframework.web.reactive.function.server.RouterFunctions.nest
+import org.springframework.web.reactive.function.server.RouterFunctions.route
 import reactor.kotlin.core.publisher.toFlux
 import java.util.*
 
@@ -42,12 +46,15 @@ fun main(args: Array<String>) {
                             .subscribe { log.info("--> $it") } // subscribe
                     }
                 }
+
                 //  Rest API
                 bean {
                     router {
-                        val customerService = ref<CustomerService>()
-                        GET("/customers") { ok().body(customerService.findAll()) }
-                        GET("/customers/{id}") { ok().body(customerService.findById(it.pathVariable("id"))) }
+                        "/customers".nest{
+                            val customerService = ref<CustomerService>()
+                            GET("/") { ok().body(customerService.findAll()) }
+                            GET("/{id}") { ok().body(customerService.findById(it.pathVariable("id"))) }
+                        }
                     }
                 }
 
