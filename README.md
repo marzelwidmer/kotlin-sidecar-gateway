@@ -12,7 +12,7 @@ data class Customer(@Id val id: String = UUID.randomUUID().toString(), val name:
 interface CustomerRepository : ReactiveCrudRepository<Customer, String>
 ```
 
-Now let's also create a service class`CustomerService` for it where we provide the following functionality. 
+Now let's also create a service class `CustomerService` for it where we provide the following functionality. 
 * save
 * findAll
 * deleteAll
