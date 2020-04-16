@@ -96,12 +96,17 @@ bean {
 Now is time to call the `Gateway Route` to check if we get a result also with the additional `ResponsHeader`
 `X-AnotherHeader: SideCar`
 
-**Request :**
+
+### Start Application
+Start Application with `default` Spring profile. 
+```bash
+mvn spring-boot:run
+```
+
+### Call Endpoint
 ```bash
 http -v :8080/api/customers
 ```
-
-
 **Response :**
 ```bash
 GET /api/customers HTTP/1.1
@@ -110,8 +115,6 @@ Accept-Encoding: gzip, deflate
 Connection: keep-alive
 Host: localhost:8080
 User-Agent: HTTPie/2.0.0
-
-
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -134,3 +137,102 @@ transfer-encoding: chunked
 ]
 ```
 
+
+
+# Gateway Routes
+`Spring Cloud Gateway` provide with the `Actuator` library an endpoint to check the configured routes.
+
+## Routing Table
+```bash
+http :8080/actuator/gateway/routes
+```
+
+**Response :**
+```bash
+HTTP/1.1 200 OK
+Content-Type: application/json
+transfer-encoding: chunked
+
+[
+    {
+        "filters": [
+            "[[RewritePath api(?<segment>/?.*) = '/${segment}'], order = 0]"
+        ],
+        "order": 0,
+        "predicate": "Paths: [/api/**], match trailing slash: true",
+        "route_id": "sidecar-api",
+        "uri": "http://localhost:8080"
+    }
+]
+```
+
+## Gateway Route for Specific Profile Only
+Define a specific `Gateway Route` only for a specific route.
+
+### Define `Profile` in the `Bean` definition.
+
+```kotlin
+    runApplication<SidecarGatewayApplication>(*args) {
+        addInitializers(
+            beans {
+                // Profile
+                profile("foo") {
+                    // Gateway - Sidecar
+                    bean {
+                        ref<RouteLocatorBuilder>()
+                            .routes {
+                                // http -v :8080/
+                                route("sidecar-root-to-customers-api") {
+                                    path("/**")
+                                    filters {
+                                        rewritePath("/(?<segment>/?.*)", "/customers/$\\{segment}")
+                                    }
+                                    uri("http://localhost:8080/")
+                                }
+                            }
+                    }
+                }
+            }
+        )
+}
+```
+
+### Run Application with Profile 
+Let's start the application with the `foo` profile.
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=foo
+```
+
+#### Routing Table
+```bash
+http :8080/actuator/gateway/routes
+```
+
+**Response :**
+```bash
+HTTP/1.1 200 OK
+Content-Type: application/json
+transfer-encoding: chunked
+
+[
+    {
+        "filters": [
+            "[[RewritePath api(?<segment>/?.*) = '/${segment}'], order = 0]"
+        ],
+        "order": 0,
+        "predicate": "Paths: [/api/**], match trailing slash: true",
+        "route_id": "sidecar-api",
+        "uri": "http://localhost:8080"
+    },
+    {
+        "filters": [
+            "[[RewritePath /(?<segment>/?.*) = '/customers/${segment}'], order = 0]"
+        ],
+        "order": 0,
+        "predicate": "Paths: [/**], match trailing slash: true",
+        "route_id": "sidecar-root-to-customers-api",
+        "uri": "http://localhost:8080/"
+    }
+]
+```

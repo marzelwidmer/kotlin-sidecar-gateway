@@ -54,7 +54,6 @@ fun main(args: Array<String>) {
                         }
                     }
                 }
-
                 // Gateway - Sidecar
                 bean {
                     ref<RouteLocatorBuilder>()
@@ -67,15 +66,25 @@ fun main(args: Array<String>) {
                                 }
                                 uri("http://localhost:8080")
                             }
-                            // http -v :8080/
-                            route("sidecar-root-to-customers-api") {
-                                path("/**")
-                                filters {
-                                    rewritePath("/(?<segment>/?.*)", "/customers/$\\{segment}")
-                                }
-                                uri("http://localhost:8080/")
-                            }
                         }
+                }
+
+                // Profile
+                profile("foo") {
+                    // Gateway - Sidecar
+                    bean {
+                        ref<RouteLocatorBuilder>()
+                            .routes {
+                                // http -v :8080/
+                                route("sidecar-root-to-customers-api") {
+                                    path("/**")
+                                    filters {
+                                        rewritePath("/(?<segment>/?.*)", "/customers/$\\{segment}")
+                                    }
+                                    uri("http://localhost:8080/")
+                                }
+                            }
+                    }
                 }
 
             }
