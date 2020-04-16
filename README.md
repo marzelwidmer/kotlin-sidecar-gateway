@@ -236,3 +236,5 @@ transfer-encoding: chunked
     }
 ]
 ```
+
+The example source code can be found here https://github.com/marzelwidmer/kotlin-sidecar-gateway
