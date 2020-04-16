@@ -1,23 +1,24 @@
-
 # Spring Cloud Gateway as Sidecar
 
-## MongoDB Customer Document 
-We start with the `MongoDB` `document` class
+This sample show how easy you can put on an existing `API` the `Spring Cloud Gateway` as kind of `SideCar` where you can manage your Security, Logging etc. 
+Or just provide a other `Endpoint` `URL` like in this sample.
 
+Let's create a Service with a Reactive Spring Boot Application and MongoDB and a Rest Endpoint.
+
+We start with the `MongoDB` document class `Customer` and a `ReactiveCrudRepository` interface `CustomerRepository`
 ```kotlin
 @Document
 data class Customer(@Id val id: String = UUID.randomUUID().toString(), val name: String)
-```
-
-## Spring Customer ReactiveCrudRepository Interface 
-Then lets create the `Repository`
-```kotlin
 interface CustomerRepository : ReactiveCrudRepository<Customer, String>
 ```
 
-## Spring Service Customer Class
-Then lets create the `Service` class for it.
-````kotlin
+Now let's also create a service class`CustomerService` for it where we provide the following functionality. 
+* save
+* findAll
+* deleteAll
+* findById
+
+```kotlin
 @Service
 class CustomerService(private val customerRepository: CustomerRepository) {
     fun save(customer: Customer) = customerRepository.save(customer)
@@ -25,12 +26,11 @@ class CustomerService(private val customerRepository: CustomerRepository) {
     fun deleteAll() = customerRepository.deleteAll()
     fun findById(id: String) = customerRepository.findById(id)
 }
-````
+```
 
-## Initialize Data
-On every application start let's clean the `MongoDB` collection and write some new data to it.
-We do it with a `Bean` definition with the Kotlin DSL.
-
+That we have some data we create a little functionality on application start with the `ApplicationRunner` from Spring Boot.  
+Let's create a Bean definitionfor the `ApplicationRunner` that delete first all entries and then save some sample values to it.
+ 
 ```kotlin
   runApplication<SidecarGatewayApplication>(*args) {
         addInitializers(
@@ -47,17 +47,18 @@ We do it with a `Bean` definition with the Kotlin DSL.
                                     .map { Customer(name = it) })
                             .flatMap { customerService.save(it) } // Save it to the Database
                             .thenMany(customerService.findAll()) // Search all entries
-                            .subscribe { log.info("--> $it") } // subscribe
+                            .subscribe { log.info("--> $it") } // subscribe - let`s do the work...
                     }
                 }
             }
         }
    }
 ```
-## Create Rest API
-Let's also create two Rest Endpoint with the Kotlin DSL `Bean` definition.
-`/customers`  and `/customers/{id}`
-
+Now we have some data in our MongoDB I think now is time to create a other Bean with the Kotlin DSL that provide a Rest endpoint.
+For this we create an `Router` that will provide the following endpoints.
+* `/customers` 
+* `/customers/{id}`
+    
 ```kotlin
 // Rest API
 bean {
@@ -67,47 +68,64 @@ bean {
         GET("/customers/{id}") { ok().body(customerService.findById(it.pathVariable("id"))) }
     }
 }
+```
+When we start now out application we can call the endpoint and hopefully we get a result like below.
+
+```bash
+mvn spring-boot:run
 ``` 
-## Create Gateway Sidecar
-Now let's create a sidecar with `Spring cloud Gateway`. 
-We create an other Rest API  `/api/customers` and `/api/customers/{id}`
-Let's also create an additional response header `X-AnotherHeader` with the value `SideCar`
+```bash
+http :8080/customers
+```
+
+```bash
+HTTP/1.1 200 OK
+Content-Type: application/json
+transfer-encoding: chunked
+
+[
+    {
+        "id": "a16c9582-0f40-4a7b-a566-372a56c3d5c8",
+        "name": "John"
+    },
+    {
+        "id": "944c3752-55c5-4ede-bc09-e02a5e47b390",
+        "name": "Jane"
+    },
+    {
+        "id": "478ce3f9-0eff-4018-a056-0656cd2c5ad4",
+        "name": "Jack"
+    }
+]
+``` 
+
+Now let's create a sidecar with `Spring cloud Gateway` that provide another Rest API `/api/customers` and `/api/customers/{id}`
+Let's create an additional response header `X-AnotherHeader` with the value `SideCar` as well.
  
 ```kotlin
 // Gateway Sidecar API
 // http -v :8080/api/customers
+// Gateway - Sidecar
 bean {
     ref<RouteLocatorBuilder>()
         .routes {
-            route("customer") {
-                path("/api/customers**")
+            // http -v :8080/api/customers
+            route("sidecar-api") {
+                path("/api/**")
                 filters {
-                    rewritePath("/api/customers/(?<segment>.*)", "/blog/(?<segment>.*)")
-                    stripPrefix(1)
-                    addResponseHeader("X-AnotherHeader", "SideCar")
+                    rewritePath("api(?<segment>/?.*)", "/$\\{segment}")
                 }
-                uri("http://localhost:8080/customers")
+                uri("http://localhost:8080")
             }
         }
 }
 ```
-
-## Call Gateway Route
-Now is time to call the `Gateway Route` to check if we get a result also with the additional `ResponsHeader`
-`X-AnotherHeader: SideCar`
-
-
-### Start Application
-Start Application with `default` Spring profile. 
-```bash
-mvn spring-boot:run
-```
-
-### Call Endpoint
+When we call now the EndPoint `/api/customers` we expect that we get the result from before and the additional `ResponsHeader`
+with `X-AnotherHeader: SideCar`
 ```bash
 http -v :8080/api/customers
 ```
-**Response :**
+
 ```bash
 GET /api/customers HTTP/1.1
 Accept: */*
@@ -137,17 +155,20 @@ transfer-encoding: chunked
 ]
 ```
 
+With the Kotlin DSL Route definition is it also easy to create routes only for specifics Spring profiles.
 
+The following command will start the application with the `default` profile.
+```bash
+mvn spring-boot:run
+```
 
-# Gateway Routes
 `Spring Cloud Gateway` provide with the `Actuator` library an endpoint to check the configured routes.
+Also let's check first our Routing Table whe we start the application with the default Spring Profile.
 
-## Routing Table
 ```bash
 http :8080/actuator/gateway/routes
 ```
 
-**Response :**
 ```bash
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -166,10 +187,7 @@ transfer-encoding: chunked
 ]
 ```
 
-## Gateway Route for Specific Profile Only
-Define a specific `Gateway Route` only for a specific route.
-
-### Define `Profile` in the `Bean` definition.
+Now create a Route just for a specific Spring Profile `foo`
 
 ```kotlin
     runApplication<SidecarGatewayApplication>(*args) {
@@ -197,19 +215,17 @@ Define a specific `Gateway Route` only for a specific route.
 }
 ```
 
-### Run Application with Profile 
-Let's start the application with the `foo` profile.
+
+Start the application with the `foo` profile with `-Dspring-boot.run.profiles=foo` and check again the Routing Table.
 
 ```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=foo
 ```
 
-#### Routing Table
 ```bash
 http :8080/actuator/gateway/routes
 ```
 
-**Response :**
 ```bash
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -236,5 +252,4 @@ transfer-encoding: chunked
     }
 ]
 ```
-
-The example source code can be found here https://github.com/marzelwidmer/kotlin-sidecar-gateway
+The example source code can be found here [GitHub kotlin-sidecar-gateway](https://github.com/marzelwidmer/kotlin-sidecar-gateway)
