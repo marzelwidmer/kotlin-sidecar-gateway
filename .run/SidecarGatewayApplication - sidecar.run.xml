@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="SidecarGatewayApplication - sidecar" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <option name="ACTIVE_PROFILES" value="sidecar" />
+    <module name="kotlin-sidecar-gateway" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="ch.keepcalm.demo.SidecarGatewayApplication" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

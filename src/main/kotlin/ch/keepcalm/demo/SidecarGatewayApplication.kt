@@ -12,6 +12,7 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.repository.reactive.ReactiveCrudRepository
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.server.body
 import org.springframework.web.reactive.function.server.router
 import reactor.kotlin.core.publisher.toFlux
@@ -49,7 +50,7 @@ fun main(args: Array<String>) {
                     router {
                         "/customers".nest {
                             val customerService = ref<CustomerService>()
-                            GET("/") { ok().body(customerService.findAll()) }
+                            GET() { ok().body(customerService.findAll()) }
                             GET("/{id}") { ok().body(customerService.findById(it.pathVariable("id"))) }
                         }
                     }
@@ -64,13 +65,16 @@ fun main(args: Array<String>) {
                                 filters {
                                     rewritePath("api(?<segment>/?.*)", "/$\\{segment}")
                                 }
+//                                val webClient = WebClient.builder().build()
+//                                val foo = webClient.get().uri("https://api.chucknorris.io/jokes/random").retrieve().bodyToFlux(String::class.java)
+//                                println(foo.subscribe().toString())
                                 uri("http://localhost:8080")
                             }
                         }
                 }
 
                 // Profile
-                profile("foo") {
+                profile("sidecar") {
                     // Gateway - Sidecar
                     bean {
                         ref<RouteLocatorBuilder>()

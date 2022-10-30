@@ -216,10 +216,10 @@ Now create a Route just for a specific Spring Profile `foo`
 ```
 
 
-Start the application with the `foo` profile with `-Dspring-boot.run.profiles=foo` and check again the Routing Table.
+Start the application with the `sidecar` profile with `-Dspring-boot.run.profiles=sidecar` and check again the Routing Table.
 
 ```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=foo
+mvn spring-boot:run -Dspring-boot.run.profiles=sidecar
 ```
 
 ```bash

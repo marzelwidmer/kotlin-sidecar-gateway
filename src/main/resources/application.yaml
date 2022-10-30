@@ -2,6 +2,11 @@ spring:
   application:
     name: sidecar-gateway-application
 
+  data:
+    mongodb:
+      database: customer-db
+      auto-index-creation: true
+
 management:
   endpoints:
     web:
@@ -17,3 +22,4 @@ management:
   info:
     git:
       mode: full
+
